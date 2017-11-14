@@ -1,5 +1,5 @@
-defmodule ReadGame do
-  alias Game.Events.{GameFinished}
+defmodule Read.Game do
+  alias Events.{GameFinished}
   @type t :: {:ongoing, Game.t} | {:finished, Game.player}
 
   def apply(%GameFinished{winner: w}, {:ongoing, _}) do

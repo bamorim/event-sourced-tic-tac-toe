@@ -21,7 +21,8 @@ defmodule TicTacToe.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:commanded, "~> 0.14"}
+      {:commanded, "~> 0.14"},
+      {:dialyxir, "~> 0.5", only: [:dev], runtime: false}
     ]
   end
 end

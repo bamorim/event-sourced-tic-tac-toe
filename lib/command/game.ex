@@ -1,14 +1,4 @@
 defmodule Game do
-  @type player :: :player_1 | :player_2
-
-  @type slot :: player | nil
-  @type board :: [[slot]]
-
-  @type coord :: 0 | 1 | 2
-  @type move :: { coord, coord }
-
-  @type t :: %{game_id: any, turn: player, finished: boolean, board: board}
-
   defstruct [
     game_id: nil,
     turn: :player_1,
@@ -20,22 +10,19 @@ defmodule Game do
     ]
   ]
 
-  defmodule Commands do
-    defmodule StartGame, do: defstruct [game_id: nil]
-    defmodule PlayMove, do: defstruct [game_id: nil, player: nil, move: nil]
-  end
+  @type player :: :player_1 | :player_2
+
+  @type slot :: player | nil
+  @type board :: [[slot]]
+
+  @type coord :: 0 | 1 | 2
+  @type move :: { coord, coord }
+  @type t :: %Game{game_id: any, turn: player, finished: boolean, board: board}
+
   alias Commands.{StartGame, PlayMove}
-  @type command :: any
-
-  defmodule Events do
-    defmodule GameStarted, do: defstruct [game_id: nil]
-    defmodule MovePlayed, do: defstruct [game_id: nil, player: nil, move: nil]
-    defmodule GameFinished, do: defstruct [game_id: nil, winner: nil]
-  end
   alias Events.{GameStarted, MovePlayed, GameFinished}
-  @type event :: any
 
-  @spec apply(t, event) :: t
+  @spec apply(t, Events.t) :: t
   def apply(_, %GameStarted{game_id: gid}) do
     %Game{game_id: gid}
   end
@@ -53,7 +40,7 @@ defmodule Game do
     %Game{game | finished: true}
   end
 
-  @spec execute(t, command) :: nil | event | [event]
+  @spec execute(t, Commands.t) :: nil | Events.t | [Events.t] | {:error, atom}
   def execute(%Game{game_id: nil}, %StartGame{game_id: id}) do
     %GameStarted{game_id: id}
   end
@@ -75,6 +62,7 @@ defmodule Game do
     end
   end
 
+  @spec place_free(board, move) :: boolean
   def place_free(board, {x,y}) do
     p = board
     |> Enum.at(x, [])
@@ -83,6 +71,7 @@ defmodule Game do
     p == nil
   end
 
+  @spec add_finish_event_if_finished(Events.t, t) :: Events.t | [Events.t]
   def add_finish_event_if_finished(play_evt, game) do
     new_board = Game.apply(game, play_evt).board
     case winner(new_board) do
@@ -93,6 +82,7 @@ defmodule Game do
     end
   end
 
+  @spec winner(board) :: player | :tie | nil
   def winner(board) do
     with nil <- row_winner(board),
          nil <- column_winner(board),
@@ -101,16 +91,19 @@ defmodule Game do
       do: nil
   end
 
+  @spec column_winner(board) :: player | nil
   def column_winner(board) do
     board
     |> transpose
     |> row_winner
   end
 
+  @spec row_winner(board) :: player | :tie | nil
   def row_winner(board) do
     board |> Enum.find_value(&seq_winner/1)
   end
 
+  @spec diag_winner(board) :: player | nil
   def diag_winner(board) do
     diag1 = board
     |> Enum.with_index
@@ -126,6 +119,7 @@ defmodule Game do
       do: nil
   end
 
+  @spec check_tie(board) :: :tie | nil
   def check_tie(board) do
     all_filled = board
     |> List.flatten
@@ -134,11 +128,13 @@ defmodule Game do
     if all_filled, do: :tie, else: nil
   end
 
+  @spec seq_winner([player]) :: player | nil
   def seq_winner([p,p,p]), do: p
   def seq_winner(_), do: nil
 
   # Auxiliary functions
 
+  @spec transpose([any]) :: [any]
   def transpose(l) do
     l
     |> List.zip
